@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM_VOID // SURVEY_PROTOCOL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bsod-blue: #1a1aff;
+            --terminal-text: #FFFFFF;
+            --bloom-color: rgba(200, 230, 255, 0.9);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            color: var(--terminal-text);
+            font-family: 'VT323', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* --- CRT Container --- */
+        #crt-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bsod-blue);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+            /* Lighting */
+            background-image: radial-gradient(circle, rgba(60,60,255,1) 0%, rgba(10,10,180,1) 60%, rgba(0,0,0,1) 95%);
+            
+            /* Increased Perspective for stronger distortion */
+            perspective: 600px; 
+            transition: height 0.2s;
+        }
+
+        /* --- Distorted Layer --- */
+        .crt-layer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            
+            /* Stronger Tilt/Curve */
+            transform: rotateX(4deg) scale(0.9);
+            
+            /* Jitter */
+            animation: vhs-shake 0.15s infinite;
+        }
+
+        #terminal-content {
+            z-index: 50;
+            width: 800px;
+            max-width: 90%;
+            padding: 2rem;
+            text-transform: uppercase;
+            text-align: center;
+            position: relative;
+
+            /* Intense RGB Split */
+            text-shadow: 
+                4px 0 0 rgba(255,0,0,0.6),
+                -4px 0 0 rgba(0,255,255,0.6),
+                0 0 20px var(--bloom-color);
+        }
+
+        /* --- Effects --- */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.4) 50%,
+                rgba(0,0,0,0.4)
+            );
+            background-size: 100% 4px;
+            animation: scrollLines 6s linear infinite;
+        }
+
+        .tracking-line {
+            position: absolute;
+            width: 100%;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.08);
+            top: -100px;
+            animation: trackingLoop 5s linear infinite;
+            z-index: 90;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+
+        .noise {
+            opacity: 0.15;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            animation: noiseAnim 0.2s steps(4) infinite;
+        }
+
+        .vignette {
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 85%, rgba(0,0,0,1) 100%);
+            z-index: 101;
+            box-shadow: inset 0 0 80px rgba(0,0,0,1);
+        }
+
+        /* --- UI Elements --- */
+        .question-box {
+            font-size: 3.5rem; 
+            margin-bottom: 2rem;
+            min-height: 100px;
+            line-height: 1.1;
+            letter-spacing: 2px;
+            filter: blur(0.5px);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--terminal-text);
+            border: 4px solid var(--terminal-text);
+            padding: 15px 50px;
+            font-family: 'VT323', monospace;
+            font-size: 2.5rem; 
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px var(--bloom-color), inset 0 0 10px rgba(255,255,255,0.2);
+            text-shadow: 2px 2px 0 rgba(0,0,255,0.5);
+            transition: all 0.1s;
+        }
+
+        .btn:hover {
+            background: white;
+            color: blue;
+            box-shadow: 0 0 60px white;
+        }
+
+        .vhs-input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        input[type="text"] {
+            background: #0000AA; 
+            border: none;
+            color: white;
+            font-family: 'VT323', monospace;
+            font-size: 3.5rem;
+            padding: 10px 30px;
+            outline: none;
+            width: 350px;
+            text-transform: uppercase;
+            text-align: center;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
+            cursor: default;
+            letter-spacing: 5px;
+        }
+
+        /* --- OSD Style Virtual Keyboard --- */
+        #virtual-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            /* Transparent background, relying on key styles */
+            padding: 10px;
+        }
+
+        .key {
+            /* Transparent with thick border - OSD Style */
+            background: transparent;
+            border: 3px solid white;
+            color: white;
+            font-family: 'VT323', monospace;
+            font-size: 2.5rem;
+            width: 80px;
+            height: 70px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px var(--bloom-color);
+            transition: all 0.05s;
+            text-shadow: 0 0 5px white;
+        }
+
+        .key:active {
+            background: white;
+            color: blue;
+            transform: scale(0.95);
+        }
+        
+        /* Simulating the "hover" cursor on a TV screen */
+        .key:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 20px white;
+        }
+
+        .key-wide {
+            grid-column: span 3;
+            width: 100%;
+            background: rgba(0,0,150,0.5); /* Slight tint for enter */
+        }
+
+        .hidden { display: none !important; }
+        
+        .error-msg {
+            color: #ff3333;
+            text-shadow: 3px 3px 0 #000;
+            font-size: 2rem;
+            margin-top: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 5px 15px;
+            border: 2px solid red;
+        }
+
+        /* --- Animation Keyframes --- */
+        @keyframes scrollLines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
+        }
+
+        @keyframes noiseAnim {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(10px,10px); }
+        }
+
+        @keyframes trackingLoop {
+            0% { top: -20%; opacity: 0; }
+            10% { opacity: 0.1; }
+            50% { opacity: 0.2; }
+            90% { opacity: 0.1; }
+            100% { top: 120%; opacity: 0; }
+        }
+
+        @keyframes vhs-shake {
+            0% { transform: translate(1px, 1px) scale(0.9) rotateX(4deg); }
+            25% { transform: translate(-1px, 0px) scale(0.901) rotateX(4deg); }
+            50% { transform: translate(0px, 2px) scale(0.9) rotateX(4deg); }
+            75% { transform: translate(1px, -1px) scale(0.901) rotateX(4deg); }
+            100% { transform: translate(1px, 1px) scale(0.9) rotateX(4deg); }
+        }
+
+        /* TV Turn Off Effect */
+        .turn-off {
+            animation: tvOff 0.2s forwards;
+        }
+
+        @keyframes tvOff {
+            0% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
+            50% { transform: scale(1, 0.05); opacity: 0.8; filter: brightness(5); }
+            100% { transform: scale(0, 0); opacity: 0; filter: brightness(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="crt-screen">
+    <!-- Visual Effects Overlays -->
+    <div class="overlay scanlines"></div>
+    <div class="overlay noise"></div>
+    <div class="overlay vignette"></div>
+    <div class="tracking-line"></div>
+    
+    <!-- Content Layer with Distortion -->
+    <div class="crt-layer">
+        <div id="terminal-content">
+            
+            <!-- Survey Section -->
+            <div id="survey-container">
+                <div id="question-text" class="question-box"></div>
+                
+                <div class="button-row">
+                    <button class="btn" id="btn-pos">POSITIVE</button>
+                    <button class="btn" id="btn-neg">NEGATIVE</button>
+                </div>
+            </div>
+
+            <!-- End Section (Date Password) -->
+            <div id="end-screen" class="hidden">
+                <div class="question-box" style="font-size: 2.5rem; margin-bottom: 2rem;">
+                    INPUT DATE CODE
+                </div>
+                
+                <div class="vhs-input-container">
+                    <!-- Readonly Input -->
+                    <input type="text" id="password-input" placeholder="DD.MM.YYYY" readonly>
+                    
+                    <div id="password-msg"></div>
+
+                    <!-- Digital VHS Keyboard -->
+                    <div id="virtual-keyboard">
+                        <div class="key" data-key="1">1</div>
+                        <div class="key" data-key="2">2</div>
+                        <div class="key" data-key="3">3</div>
+                        <div class="key" data-key="4">4</div>
+                        <div class="key" data-key="5">5</div>
+                        <div class="key" data-key="6">6</div>
+                        <div class="key" data-key="7">7</div>
+                        <div class="key" data-key="8">8</div>
+                        <div class="key" data-key="9">9</div>
+                        <div class="key" data-key=".">.</div>
+                        <div class="key" data-key="0">0</div>
+                        <div class="key" data-key="DEL">←</div>
+                        <div class="key key-wide" data-key="ENTER">ENTER</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const TARGET_DATE = "03.12.1943";
+    const FILE_NAME = "Password.dll";
+    
+    let currentQuestionIndex = 0;
+    const questions = [
+        "DO YOU FEEL THE SILENCE?",
+        "DOES THE DARKNESS REPLY?",
+        "DO YOU TRUST THEM?",
+        "DO THEY KNOW YOUR FACE?",
+        "WILL THE VOID NOTICE?"
+    ];
+
+    const surveyContainer = document.getElementById('survey-container');
+    const endScreen = document.getElementById('end-screen');
+    const questionText = document.getElementById('question-text');
+    
+    const btnPos = document.getElementById('btn-pos');
+    const btnNeg = document.getElementById('btn-neg');
+    
+    const passwordInput = document.getElementById('password-input');
+    const passwordMsg = document.getElementById('password-msg');
+
+    questionText.innerHTML = questions[0];
+
+    btnPos.addEventListener('click', () => handleSurveyNext());
+    btnNeg.addEventListener('click', () => handleSurveyNext());
+
+    function handleSurveyNext() {
+        document.body.style.filter = "brightness(2) blur(3px)";
+        setTimeout(() => document.body.style.filter = "brightness(1) blur(0px)", 150);
+
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < questions.length) {
+            questionText.style.opacity = 0;
+            setTimeout(() => {
+                questionText.innerHTML = questions[currentQuestionIndex];
+                questionText.style.opacity = 1;
+            }, 100);
+        } else {
+            surveyContainer.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+        }
+    }
+
+    document.getElementById('virtual-keyboard').addEventListener('click', function(e) {
+        const keyEl = e.target.closest('.key');
+        if (!keyEl) return;
+
+        const key = keyEl.getAttribute('data-key');
+        const input = document.getElementById('password-input');
+
+        if (key === 'ENTER') {
+            checkPassword();
+        } else if (key === 'DEL') {
+            input.value = input.value.slice(0, -1);
+        } else {
+            if (input.value.length < 10) { 
+                input.value += key;
+            }
+        }
+        
+        document.getElementById('terminal-content').style.transform = "rotateX(4deg) scale(0.9) translateX(2px)";
+        setTimeout(() => {
+            document.getElementById('terminal-content').style.transform = "";
+        }, 50);
+    });
+
+    function checkPassword() {
+        const inputDate = passwordInput.value.trim();
+
+        if (inputDate === TARGET_DATE) {
+            const specialPassword = generateRandomPassword(64);
+            const fileContent = specialPassword;
+
+            downloadFile(FILE_NAME, fileContent);
+            
+            const crt = document.getElementById('crt-screen');
+            
+            crt.classList.add('turn-off');
+            
+            setTimeout(() => {
+                document.body.innerHTML = '';
+                document.body.style.backgroundColor = 'black';
+                document.body.style.cursor = 'none';
+            }, 200);
+
+        } else {
+            passwordMsg.innerHTML = "<div class='error-msg'>INVALID DATE CODE</div>";
+            passwordInput.value = "";
+            
+            document.body.style.transform = "skewX(20deg) scale(0.9)";
+            setTimeout(() => {
+                document.body.style.transform = "skewX(0deg) scale(1)";
+            }, 100);
+        }
+    }
+
+    function generateRandomPassword(length) {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+        let result = "";
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    function downloadFile(filename, content) {
+        const element = document.createElement('a');
+        const blob = new Blob([content], { type: 'text/plain' });
+        
+        element.setAttribute('href', window.URL.createObjectURL(blob));
+        element.setAttribute('download', filename);
+        element.style.display = 'none';
+        
+        document.body.appendChild(element);
+        element.click();
+        
+        document.body.removeChild(element);
+    }
+</script>
+
+</body>
+</html>
